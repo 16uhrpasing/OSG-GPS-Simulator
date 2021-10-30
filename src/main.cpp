@@ -17,6 +17,11 @@
 #include <osg/io_utils>
 #include <osg/MatrixTransform>
 
+#include <osgAnimation/BasicAnimationManager>
+#include <osgAnimation/UpdateMatrixTransform>
+#include <osgAnimation/StackedTranslateElement>
+#include <osgAnimation/StackedQuaternionElement>
+
 #include <Skybox.h>
 #include <MyManipulator.h>
 #include <PickHandler.h>
@@ -28,7 +33,24 @@ const double satellite_distance = 37000 / radius_earth;
 const double radius_sun = 695990.0 / radius_earth;
 const double AU = 149697900.0 / radius_earth;
 
+void createAnimationPath(float radius, float time,
+	//Alle rotationen für einen channel
+	osgAnimation::QuatKeyframeContainer* container2)
+{
+	unsigned int numSamples = 32;
+	float delta_yaw = 2.0f * osg::PI / ((float)numSamples - 1.0f);
+	float delta_time = time / (float)numSamples;
+	for (unsigned int i = 0; i < numSamples; ++i)
+	{
+		float yaw = delta_yaw * (float)i;
+		osg::Vec3 pos(sinf(yaw) * radius, cosf(yaw) * radius, 0.0f);
+		osg::Quat rot(-yaw, osg::Z_AXIS);
 
+		container2->push_back(
+			osgAnimation::QuatKeyframe(delta_time * (float)i, rot)
+		);
+	}
+}
 
 
 
@@ -109,14 +131,7 @@ osg::Geode* createSpaceSkyBoxGeode() {
 	osg::ref_ptr<SkyBox> skybox = new SkyBox;
 	geode->getOrCreateStateSet()->setTextureAttributeAndModes(
 		0, new osg::TexGen);
-	/*eode->setEnvironmentMap(0,
-		osgDB::readImageFile("G:/git/spaceCube/left.jpeg"),
-		osgDB::readImageFile("G:/git/spaceCube/right.jpeg"),
-		osgDB::readImageFile("G:/git/spaceCube/bottom.jpeg"),
-		osgDB::readImageFile("G:/git/spaceCube/top.jpeg"),
-		osgDB::readImageFile("G:/git/spaceCube/front.jpeg"),
-		osgDB::readImageFile("G:/git/spaceCube/back.jpeg"));*/
-	//skybox->addChild(geode.get());
+
 
 	osg::ref_ptr<osg::TextureCubeMap> cubemap =
 		new osg::TextureCubeMap;
@@ -134,24 +149,70 @@ osg::Geode* createSpaceSkyBoxGeode() {
 	return geode.release();
 }
 
+osg::MatrixTransform* createSatteliteRing(int count)
+{
+	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("G:/git/satellite/satellite_obj.obj");
+	osg::ref_ptr<osg::MatrixTransform> satellite = new osg::MatrixTransform;
+	satellite->addChild(satellite_obj);
 
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring = new osg::MatrixTransform;
+
+	for (int i = 0; i < 4; i++)
+	{
+		osg::ref_ptr<osg::MatrixTransform> instanced_satellite = new osg::MatrixTransform;
+		instanced_satellite->addChild(satellite);
+
+		instanced_satellite->setMatrix(osg::Matrix::scale(0.04, 0.04, 0.04) *
+			osg::Matrix::rotate((-1.5 * PI) + (0.75*PI)*i, osg::Z_AXIS) *
+			osg::Matrix::translate(osg::Vec3(sin(i*PI*1/2)*(1.0 + satellite_distance), cos(i*PI*1/2)*(1.0 + satellite_distance), 0.0)));
+
+		satellite_ring->addChild(instanced_satellite);
+	}
+
+	
+
+	return satellite_ring.release();
+}
 
 int main(int argc, char** argv)
 {
-
 	//osg::ref_ptr<osg::MatrixTransform> sun_node = createSunGeode();
 	osg::ref_ptr<osg::MatrixTransform> earth_node = createEarthGeode();
-	osg::ref_ptr<osg::MatrixTransform> satellite_node = new osg::MatrixTransform;
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring = createSatteliteRing(0);
 
-	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("G:/git/satellite/satellite_obj.obj");
-	satellite_node->addChild(satellite_obj);
-	
+	osg::ref_ptr<osgAnimation::QuatSphericalLinearChannel> ch2 =
+		new osgAnimation::QuatSphericalLinearChannel;
+	ch2->setName("quat");
+	ch2->setTargetName("PathCallback");
+
+
+	createAnimationPath(1.0 + satellite_distance, 18.0f,
+		ch2->getOrCreateSampler()->getOrCreateKeyframeContainer());
+
+	osg::ref_ptr<osgAnimation::Animation> animation = new
+		osgAnimation::Animation;
+	animation->setPlayMode(osgAnimation::Animation::LOOP);
+	animation->addChannel(ch2.get());
+
+	osg::ref_ptr<osgAnimation::UpdateMatrixTransform> updater =
+		new osgAnimation::UpdateMatrixTransform("PathCallback");
+	updater->getStackedTransforms().push_back(
+		new osgAnimation::StackedQuaternionElement("quat"));
+
+
+	satellite_ring->setDataVariance(osg::Object::DYNAMIC);
+	satellite_ring->setUpdateCallback(updater.get());
+
+	osg::ref_ptr<osgAnimation::BasicAnimationManager> manager =
+		new osgAnimation::BasicAnimationManager;
+	manager->registerAnimation(animation.get());
 
 	osg::ref_ptr<osg::Group> root = new osg::Group;
 	//root->addChild(sun_node);
 	root->addChild(earth_node);
 	root->addChild(createSpaceSkyBoxGeode());
-	root->addChild(satellite_node);
+	root->addChild(satellite_ring);
+	root->setUpdateCallback(manager.get());
 
 
 	osg::ref_ptr<PickHandler> picker = new PickHandler;
@@ -172,20 +233,19 @@ int main(int argc, char** argv)
 
 	osgViewer::Viewer viewer;
 	viewer.setSceneData(root);
-	//viewer.setUpDepthPartition(dps.get());
 	viewer.setCameraManipulator(myManipulator);
 	viewer.addEventHandler(picker.get());
 
 	std::cout << viewer.getCamera()->getNearFarRatio() << std::endl;
-	//viewer.getCamera()->setNearFarRatio(0.00001);
+
+	manager->playAnimation(animation.get());
 
 	float frameCount = 0.f;
 	while (!viewer.done())
 	{
-		satellite_node->setMatrix(osg::Matrix::scale(0.04, 0.04, 0.04) * osg::Matrix::rotate(1.5*PI, osg::Z_AXIS) * osg::Matrix::translate(osg::Vec3(0.0, 1.0 + satellite_distance, 0.0)));
+		
 		viewer.frame();
 		frameCount = frameCount + 1/100.f;
-		//std::cout << frameCount << std::endl;
 	}
 
 	return 0;
