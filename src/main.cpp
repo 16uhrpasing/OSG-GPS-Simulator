@@ -149,7 +149,11 @@ osg::Geode* createSpaceSkyBoxGeode() {
 	return geode.release();
 }
 
-osg::MatrixTransform* createSatteliteRing(int count)
+float modulo(int x, int N) {
+	return (x % N + N) % N;
+}
+
+osg::MatrixTransform* createSatelliteRing(int count)
 {
 	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("G:/git/satellite/satellite_obj.obj");
 	osg::ref_ptr<osg::MatrixTransform> satellite = new osg::MatrixTransform;
@@ -157,14 +161,24 @@ osg::MatrixTransform* createSatteliteRing(int count)
 
 	osg::ref_ptr<osg::MatrixTransform> satellite_ring = new osg::MatrixTransform;
 
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < count; i++)
 	{
 		osg::ref_ptr<osg::MatrixTransform> instanced_satellite = new osg::MatrixTransform;
 		instanced_satellite->addChild(satellite);
 
+		float translateX = -sin(2.0 * i * PI / count);
+		float translateY = -cos(2.0 * i * PI / count);
+
+		float angleDegrees = modulo((90 - (360/count)*i),360);
+
+		std::cout << "test: " << modulo(90 - 45 * 3,360) << std::endl;
+
+		float angleRads = angleDegrees * PI / 180.;
+		std::cout << angleDegrees << std::endl;
+
 		instanced_satellite->setMatrix(osg::Matrix::scale(0.04, 0.04, 0.04) *
-			osg::Matrix::rotate((-1.5 * PI) + (0.75*PI)*i, osg::Z_AXIS) *
-			osg::Matrix::translate(osg::Vec3(sin(i*PI*1/2)*(1.0 + satellite_distance), cos(i*PI*1/2)*(1.0 + satellite_distance), 0.0)));
+			osg::Matrix::rotate(angleRads, osg::Z_AXIS) *
+			osg::Matrix::translate(translateX*(1.0 + satellite_distance), translateY*(1.0 + satellite_distance), 0.0));
 
 		satellite_ring->addChild(instanced_satellite);
 	}
@@ -178,7 +192,18 @@ int main(int argc, char** argv)
 {
 	//osg::ref_ptr<osg::MatrixTransform> sun_node = createSunGeode();
 	osg::ref_ptr<osg::MatrixTransform> earth_node = createEarthGeode();
-	osg::ref_ptr<osg::MatrixTransform> satellite_ring = createSatteliteRing(0);
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_template = createSatelliteRing(8);
+
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_one = new osg::MatrixTransform;
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_two = new osg::MatrixTransform;
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_three = new osg::MatrixTransform;
+
+	satellite_ring_one->addChild(satellite_ring_template);
+	satellite_ring_two->addChild(satellite_ring_template);
+	satellite_ring_three->addChild(satellite_ring_template);
+
+	satellite_ring_two->setMatrix(osg::Matrix::rotate((22.5) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((90) * PI / 180, osg::X_AXIS));
+	satellite_ring_three->setMatrix(osg::Matrix::rotate((22.5) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
 
 	osg::ref_ptr<osgAnimation::QuatSphericalLinearChannel> ch2 =
 		new osgAnimation::QuatSphericalLinearChannel;
@@ -200,8 +225,11 @@ int main(int argc, char** argv)
 		new osgAnimation::StackedQuaternionElement("quat"));
 
 
-	satellite_ring->setDataVariance(osg::Object::DYNAMIC);
-	satellite_ring->setUpdateCallback(updater.get());
+	satellite_ring_template->setDataVariance(osg::Object::DYNAMIC);
+	satellite_ring_template->setUpdateCallback(updater.get());
+
+	//satellite_ring_two->setDataVariance(osg::Object::DYNAMIC);
+	//satellite_ring_two->setUpdateCallback(updater.get());
 
 	osg::ref_ptr<osgAnimation::BasicAnimationManager> manager =
 		new osgAnimation::BasicAnimationManager;
@@ -211,7 +239,9 @@ int main(int argc, char** argv)
 	//root->addChild(sun_node);
 	root->addChild(earth_node);
 	root->addChild(createSpaceSkyBoxGeode());
-	root->addChild(satellite_ring);
+	root->addChild(satellite_ring_one);
+	root->addChild(satellite_ring_two);
+	root->addChild(satellite_ring_three);
 	root->setUpdateCallback(manager.get());
 
 
@@ -240,12 +270,12 @@ int main(int argc, char** argv)
 
 	manager->playAnimation(animation.get());
 
-	float frameCount = 0.f;
+	float frameCount = 0;
 	while (!viewer.done())
 	{
-		
+		frameCount++;
+		//satellite_ring_container->setMatrix(osg::Matrix::rotate((frameCount / 2) * PI / 180, osg::X_AXIS));
 		viewer.frame();
-		frameCount = frameCount + 1/100.f;
 	}
 
 	return 0;
