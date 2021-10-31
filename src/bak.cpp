@@ -183,44 +183,27 @@ osg::MatrixTransform* createSatelliteRing(int count)
 		satellite_ring->addChild(instanced_satellite);
 	}
 
+	
 
 	return satellite_ring.release();
-}
-
-osg::MatrixTransform* createSatelliteSystem(osg::MatrixTransform* satellite_ring, const std::vector<osg::Matrix> rotations)
-{
-	
-	osg::ref_ptr<osg::MatrixTransform> satellite_system = new osg::MatrixTransform;
-
-	for (auto rotation : rotations) {
-		osg::ref_ptr<osg::MatrixTransform> satellite_ring_transformation = new osg::MatrixTransform;
-		satellite_ring_transformation->addChild(satellite_ring);
-		satellite_ring_transformation->setMatrix(rotation);
-		satellite_system->addChild(satellite_ring_transformation);
-	}
-
-	return satellite_system.release();
 }
 
 int main(int argc, char** argv)
 {
 	//osg::ref_ptr<osg::MatrixTransform> sun_node = createSunGeode();
 	osg::ref_ptr<osg::MatrixTransform> earth_node = createEarthGeode();
-	osg::ref_ptr<osg::MatrixTransform> satellite_ring_template = createSatelliteRing(4);
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_template = createSatelliteRing(8);
 
-	std::vector<osg::Matrix> x_rotations;
-	x_rotations.push_back(osg::Matrix::rotate((45) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS));
-	x_rotations.push_back(osg::Matrix::rotate(-(45) * PI / 180, osg::X_AXIS));
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_one = new osg::MatrixTransform;
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_two = new osg::MatrixTransform;
+	osg::ref_ptr<osg::MatrixTransform> satellite_ring_three = new osg::MatrixTransform;
 
-	std::vector<osg::Matrix> satellite_system_rotations;
-	satellite_system_rotations.push_back(osg::Matrix::rotate(0, osg::X_AXIS));
-	satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
-	satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Z_AXIS));
+	satellite_ring_one->addChild(satellite_ring_template);
+	satellite_ring_two->addChild(satellite_ring_template);
+	satellite_ring_three->addChild(satellite_ring_template);
 
-
-	osg::ref_ptr<osg::MatrixTransform> x_system = createSatelliteSystem(satellite_ring_template, x_rotations);
-	osg::ref_ptr<osg::MatrixTransform> satellite_system = createSatelliteSystem(x_system, satellite_system_rotations);
-
+	satellite_ring_two->setMatrix(osg::Matrix::rotate((22.5) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((90) * PI / 180, osg::X_AXIS));
+	satellite_ring_three->setMatrix(osg::Matrix::rotate((22.5) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
 
 	osg::ref_ptr<osgAnimation::QuatSphericalLinearChannel> ch2 =
 		new osgAnimation::QuatSphericalLinearChannel;
@@ -245,6 +228,9 @@ int main(int argc, char** argv)
 	satellite_ring_template->setDataVariance(osg::Object::DYNAMIC);
 	satellite_ring_template->setUpdateCallback(updater.get());
 
+	//satellite_ring_two->setDataVariance(osg::Object::DYNAMIC);
+	//satellite_ring_two->setUpdateCallback(updater.get());
+
 	osg::ref_ptr<osgAnimation::BasicAnimationManager> manager =
 		new osgAnimation::BasicAnimationManager;
 	manager->registerAnimation(animation.get());
@@ -253,8 +239,9 @@ int main(int argc, char** argv)
 	//root->addChild(sun_node);
 	root->addChild(earth_node);
 	root->addChild(createSpaceSkyBoxGeode());
-	root->addChild(satellite_system);
-
+	root->addChild(satellite_ring_one);
+	root->addChild(satellite_ring_two);
+	root->addChild(satellite_ring_three);
 	root->setUpdateCallback(manager.get());
 
 
