@@ -40,16 +40,12 @@
 
 int main(int argc, char** argv)
 {
-	//osg::ref_ptr<osg::MatrixTransform> sun_node = createSunGeode();
 	osg::ref_ptr<osg::MatrixTransform> earth_node = createEarthGeode();
 	
 
 	osg::ref_ptr<osg::AnimationPathCallback> apcb = new
 		osg::AnimationPathCallback;
 	apcb->setAnimationPath(createAnimationPath(osg::Vec3(0.f,0.f,0.f), 18.0f));
-
-	//satellite_ring_template->setUpdateCallback(apcb.get());
-
 
 	std::vector<osg::Matrix> x_rotations;
 	osg::Matrix xFormationOne = osg::Matrix::rotate((45) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS);
@@ -65,24 +61,12 @@ int main(int argc, char** argv)
 	x_rotations.push_back(xFormationOne*moveY); //4 etc.
 	x_rotations.push_back(xFormationTwo*moveY);
 
-
-	//std::vector<osg::Matrix> satellite_system_rotations;
-	//satellite_system_rotations.push_back(osg::Matrix::rotate(0, osg::X_AXIS));
-	//satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
-	//satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Z_AXIS));
-
-	//instanceSatelliteSystem(x_system, satellite_system_rotations);
-
 	
 
 	osg::ref_ptr<osg::Group> root = new osg::Group;
-	//root->addChild(sun_node);
 	root->addChild(earth_node);
 	root->addChild(createSpaceSkyBoxGeode());
-	//root->addChild(instanceOne);
-	//root->addChild(instanceTwo);
-	//root->addChild(instanceOne);
-	//root->addChild(instanceOne);
+
 	std::vector<osg::PositionAttitudeTransform*> satRefs;
 
 	for (int i = 0; i < x_rotations.size(); i++)
@@ -111,7 +95,6 @@ int main(int argc, char** argv)
 	root->addChild(picker->getPickNode());
 	root->addChild(picker->getTangentPlane());
 	root->addChild(beam);
-	//instanceSatelliteSystem(satellite_ring_template, x_rotations, root);
 
 	osg::ref_ptr<MyManipulator> myManipulator = new MyManipulator;
 	myManipulator->setHomePosition(osg::Vec3(12.5, 0 , 0),
@@ -133,21 +116,6 @@ int main(int argc, char** argv)
 
 	std::cout << viewer.getCamera()->getNearFarRatio() << std::endl;
 
-	//manager->playAnimation(animation.get());
-
-	//SatelliteTracker satelliteTracker;
-	//root->accept(satelliteTracker);
-	//std::cout << "satellite count: " << satelliteTracker.getSatelliteCount() << std::endl;
-	
-	//std::vector<osg::MatrixTransform*> satellites = satelliteTracker.getSatellites();
-	//satelliteTracker.initializeMatrixHeap();
-	//satelliteTracker.calculateMatrixHeap(4);
-	//int satelliteCount = satelliteTracker.getSatelliteCount();
-
-	/*std::vector<bool> isSatelliteAbove;
-	for (int i = 0; i < satelliteCount; i++) {
-		isSatelliteAbove.push_back(false);
-	}*/
 
 	osg::ref_ptr<osg::PolygonMode> fillMode = new osg::PolygonMode;
 	fillMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
@@ -165,9 +133,7 @@ int main(int argc, char** argv)
 	float frameCount = 0;
 	while (!viewer.done())
 	{
-		//satelliteTracker.calculateMatrixHeap(4);
-		//std::cout << satelliteTracker.getDeconstructedMatrixAt(0).trans << std::endl;
-		
+
 		if (picker->isPicked())
 		{
 		
@@ -183,67 +149,12 @@ int main(int argc, char** argv)
 				}
 			}
 			
-			/*satellite_ring_template->setMatrix(osg::Matrix::rotate((frameCount)*PI / 180, osg::Y_AXIS));
-
-			for (int i = 0; i < satelliteCount; i++) {
-				osg::Vec3 currentSatellitePos = satelliteTracker.getDeconstructedMatrixAt(i).pos;
-
-				//std::cout << i << ": " << picker->getPickPlane()->insertPlaneEquation(currentSatellitePos) << std::endl;
-				bool isAbove = picker->getPickPlane()->insertPlaneEquation(currentSatellitePos) > 0.0;
-				if (isSatelliteAbove.at(i) != isAbove) {
-					isSatelliteAbove.at(i) = isAbove;
-					std::cout << "satellite " << i << " is above: " << isAbove << std::endl;
-
-					if (isAbove) {
-						satellites.at(i)->getOrCreateStateSet()->setAttribute(fillMode);
-					}
-					else {
-						satellites.at(i)->getOrCreateStateSet()->setAttribute(pointMode);
-					}
-
-				}
-					
-			
-
-			}*/
-			//osg::Vec3 satellitePos = satelliteTracker.getDeconstructedMatrixAt(0).pos;
-			//osg::Vec3 satellitePosOne = satelliteTracker.getDeconstructedMatrixAt(1).pos;
-			//std::cout << "pos1: " << satellitePos << " equation: " << picker->getPickPlane()->insertPlaneEquation(satellitePos) << std::endl;
-			//std::cout << "pos2: " << satellitePosOne << " equation: " << picker->getPickPlane()->insertPlaneEquation(satellitePosOne) << std::endl;
-
-			//std::cout << frameCount << std::endl;
-
-			//beam->setMatrix(osg::Matrix::scale(1.0, 1.0, 1.0) *
-			//	osg::Matrix::rotate(frameCount / 10.0, osg::Z_AXIS) *
-			//	osg::Matrix::translate(satellitePos/2.));
-
-			/*for (int i = 0; i < satelliteCount; i++)
-			{
-				osg::Vec3 satellitePos = satelliteTracker.getDeconstructedMatrixAt(i).pos;
-				bool isSatelliteAbove = picker->getPickPlane()->planeEquation(satellitePos) > 0;
-				if (isSatelliteAbove) {
-					osg::ref_ptr<osg::PolygonMode> pm = new osg::PolygonMode;
-					pm->setMode(osg::PolygonMode::FRONT_AND_BACK,
-						osg::PolygonMode::FILL);
-
-					satellites.at(i)->getOrCreateStateSet()->setAttribute(pm.get());
-				}
-				else {
-					osg::ref_ptr<osg::PolygonMode> pm = new osg::PolygonMode;
-					pm->setMode(osg::PolygonMode::FRONT_AND_BACK,
-						osg::PolygonMode::POINT);
-
-					satellites.at(i)->getOrCreateStateSet()->setAttribute(pm.get());
-				}
-			}*/
-				
 		}
 
 		frameCount++;
 		viewer.frame();
 	}
 	picker->getPickPlane()->printPlaneEquation();
-	//satelliteTracker.deleteMatrixHeap();
 
 	return 0;
 }

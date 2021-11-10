@@ -32,8 +32,6 @@ src/UniverseObjects.cpp
 include/UniverseObjects.h
 src/Animator.cpp 
 include/Animator.h
-src/SatelliteTracker.cpp 
-include/SatelliteTracker.h 
 src/MathLib.cpp
 include/MathLib.h )
 
