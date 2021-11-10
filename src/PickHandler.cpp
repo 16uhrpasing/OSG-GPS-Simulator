@@ -1,6 +1,5 @@
 #include <PickHandler.h>
 
-
 struct latlon {
 	double lat;
 	double lon;
@@ -40,28 +39,28 @@ latlon vec3ToLatlon(const osg::Vec3& earthCoord) {
 	return latlon{ -asin(y) * 180. / PI, lon };
 }
 
-osg::Node* PickHandler::getOrCreateSelectionBox()
+osg::Node* PickHandler::getPickNode()
 {
-	if (!_selectionSphere)
-	{
-		osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-		//auto markPoint = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(), 1.0f));
-		//markPoint->setColor(osg::Vec4(1.0f, 0.f, 0.f, 0.f));
-		//geode->addDrawable(markPoint);
-
-		_selectionSphere = new osg::MatrixTransform;
-		//Maske wie in Unity Layer
-		_selectionSphere->setNodeMask(0x1);
-		_selectionSphere->addChild(geode.get());
-
-		osg::StateSet* ss = _selectionSphere->getOrCreateStateSet();
-		ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-		//ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE));
-	}
 	return _selectionSphere.get();
 }
 
+osg::Vec3d PickHandler::getPickNodePos()
+{
+	return _selectionSphere->getPosition();
+}
 
+bool PickHandler::isPicked()
+{
+	return _picked;
+}
+
+MathPlane* PickHandler::getPickPlane() {
+	return _pickPlane;
+}
+
+osg::MatrixTransform* PickHandler::getTangentPlane() {
+	return _tangentPlane;
+}
 
 bool PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 {
@@ -90,23 +89,43 @@ bool PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
 		if (intersector->containsIntersections()) 
 		{
 			osgUtil::LineSegmentIntersector::Intersection result = *(intersector->getIntersections().begin());
-			std::cout << result.localIntersectionPoint.x() << "..." << result.localIntersectionPoint.y() << "..." << result.localIntersectionPoint.z() << std::endl;
-			vec3ToLatlon(result.localIntersectionPoint).print();
+			if (result.localIntersectionPoint.length() < 0.9) return false;
+			osg::Vec3d normalizedIntersection = result.localIntersectionPoint;
+			normalizedIntersection.normalize();
+			std::cout << normalizedIntersection.x() << "..." << normalizedIntersection.y() << "..." << normalizedIntersection.z() << std::endl;
+			vec3ToLatlon(normalizedIntersection).print();
+			
+			_picked = true;
+			_selectionSphere->setPosition(normalizedIntersection);
 
-			osg::ref_ptr<osg::ShapeDrawable> shape2 = new osg::ShapeDrawable;
-			shape2->setShape(new osg::Sphere(result.localIntersectionPoint,
-				0.005f));
+			osg::Vec3d crossNormal(1.0,0.0,0.0);
+			if (abs(normalizedIntersection.x()) > 0.9)
+				crossNormal.set(0.0, 1.0, 0.0);
 
-			_selectionSphere->addChild(shape2);
+			osg::Vec3d firstDirection = normalizedIntersection ^ crossNormal;
+			osg::Vec3d secondDirection = normalizedIntersection ^ firstDirection;
 
-			/*osg::BoundingSphere bb = result.drawable->getBound();
-			osg::Vec3 worldCenter = bb.center() * osg::computeLocalToWorld(result.nodePath);
+			_pickPlane->setPlaneEquation(normalizedIntersection, firstDirection, secondDirection);
+			_pickPlane->printParametricEquation();
+			//_tangentPlane->unref();
+			//_tangentPlane = new osg::MatrixTransform;
+			_tangentPlane->removeChildren(0, _tangentPlane->getNumChildren());
+	
+			
 
+			for (double x = -10; x < 10; x += 0.5)
+			{
+				for (double y = -10; y < 10; y += 0.5)
+				{
+					osg::Vec3d drawCenter = _pickPlane->parametricEquation(x, y);
+					osg::ref_ptr<osg::MatrixTransform> instancePlanePoint = new osg::MatrixTransform;
+					instancePlanePoint->addChild(_tangentPointTemplate);
 
+					instancePlanePoint->setMatrix(osg::Matrix::translate(drawCenter));
+					_tangentPlane->addChild(instancePlanePoint);
+				}
+			}
 
-			_selectionSphere->setMatrix(
-				osg::Matrix::scale(bb.radius(), bb.radius(), bb.radius()) *
-				osg::Matrix::translate(worldCenter));*/
 		}
 		else
 		{

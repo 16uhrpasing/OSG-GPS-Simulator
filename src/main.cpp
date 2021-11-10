@@ -25,242 +25,93 @@
 #include <Skybox.h>
 #include <MyManipulator.h>
 #include <PickHandler.h>
+#include <UniverseObjects.h>
+#include <Animator.h>
+#include <SatelliteTracker.h>
+
 #include <tuple>
 
-//earth distance mapped to 1
-const double radius_earth = 6378.137;
-const double satellite_distance = 37000 / radius_earth;
-const double radius_sun = 695990.0 / radius_earth;
-const double AU = 149697900.0 / radius_earth;
+#include <osg/AnimationPath>
 
-void createAnimationPath(float radius, float time,
-	//Alle rotationen für einen channel
-	osgAnimation::QuatKeyframeContainer* container2)
-{
-	unsigned int numSamples = 32;
-	float delta_yaw = 2.0f * osg::PI / ((float)numSamples - 1.0f);
-	float delta_time = time / (float)numSamples;
-	for (unsigned int i = 0; i < numSamples; ++i)
-	{
-		float yaw = delta_yaw * (float)i;
-		osg::Vec3 pos(sinf(yaw) * radius, cosf(yaw) * radius, 0.0f);
-		osg::Quat rot(-yaw, osg::Z_AXIS);
-
-		container2->push_back(
-			osgAnimation::QuatKeyframe(delta_time * (float)i, rot)
-		);
-	}
-}
+#include <stdexcept>
 
 
 
-osg::MatrixTransform* createEarthGeode() {
-	osg::Geode* earth_geode = new osg::Geode();
-	osg::StateSet* stateset = new osg::StateSet();
-	stateset->setMode(GL_LIGHTING, osg::StateAttribute::ON);
-	earth_geode->setStateSet(stateset);
-
-	osg::TessellationHints* hints = new osg::TessellationHints;
-	hints->setDetailRatio(1.0f);
-	auto earth_sphere = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0, 0.0, 0.0), 1.0), hints);
-	auto earthState = earth_sphere->getOrCreateStateSet();
-	earthState->setTextureAttributeAndModes(0, new osg::TexGen);
-	osg::ref_ptr<osg::TextureCubeMap> tcm = new osg::TextureCubeMap;
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("G:/git/earthCube/flipped/posx.jpeg")); //posx
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("G:/git/earthCube/flipped/negx.jpeg")); //links
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("G:/git/earthCube/flipped/negy.jpeg")); //hinten
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("G:/git/earthCube/flipped/posyy.jpeg")); //vorne
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("G:/git/earthCube/flipped/negz.jpeg")); //oben
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("G:/git/earthCube/flipped/posz.jpeg")); //negy
-	earthState->setTextureAttributeAndModes(0, tcm.get());
-
-	earth_geode->addDrawable(earth_sphere);
-	osg::ref_ptr<osg::MatrixTransform> earth_node =
-		new osg::MatrixTransform;
-	earth_node->addChild(earth_geode);
-	//earth_node->setMatrix(osg::Matrix::rotate(0.5*-PI, osg::Z_AXIS) * osg::Matrix::rotate(0.5 * PI, osg::Y_AXIS));
-	//earth_node->setNodeMask(0x5);
-
-	auto red = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(1, 0, 0), 0.04));
-	auto blue = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0, 0, 1), 0.04));
-	auto green = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0, 1, 0), 0.04));
-	red->setColor(osg::Vec4(1.f, 0.f, 0.f, 0.f));
-	blue->setColor(osg::Vec4(0.f, 0.f, 1.f, 0.f));
-	green->setColor(osg::Vec4(0.f, 1.f, 0.f, 0.f));
-
-	auto black = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(-1, 0, 0), 0.04));
-	black->setColor(osg::Vec4(0.f, 0.f, 0.f, 0.f));
-	auto grey = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0, -1, 0), 0.04));
-	grey->setColor(osg::Vec4(0.5, 0.5f, 0.5f, 0.f));
-	auto white = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0, 0, -1), 0.04));
-	white->setColor(osg::Vec4(1.f, 1.f, 1.f, 0.f));
-
-	earth_node->addChild(red);
-	earth_node->addChild(blue);
-	earth_node->addChild(green);
-	earth_node->addChild(black);
-	earth_node->addChild(grey);
-	earth_node->addChild(white);
-
-	return earth_node.release();
-}
-
-osg::MatrixTransform* createSunGeode() {
-	//Create Sun Node
-	osg::ref_ptr<osg::ShapeDrawable> sun_sphere = new
-		osg::ShapeDrawable;
-	sun_sphere->setShape(new osg::Sphere(osg::Vec3(), radius_sun));
-	sun_sphere->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	osg::ref_ptr<osg::Geode> sun_geode = new osg::Geode;
-	sun_geode->addDrawable(sun_sphere.get());
-	osg::ref_ptr<osg::MatrixTransform> sun_node =
-		new osg::MatrixTransform;
-	sun_node->setMatrix(osg::Matrix::translate(0.0, AU , 0.0));
-	sun_node->addChild(sun_geode.get());
-
-	return sun_node.release();
-}
-
-osg::Geode* createSpaceSkyBoxGeode() {
-	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-	geode->addDrawable(new osg::ShapeDrawable(
-		new osg::Sphere(osg::Vec3(), 999.0)
-	));
-
-
-	osg::ref_ptr<SkyBox> skybox = new SkyBox;
-	geode->getOrCreateStateSet()->setTextureAttributeAndModes(
-		0, new osg::TexGen);
-
-
-	osg::ref_ptr<osg::TextureCubeMap> cubemap =
-		new osg::TextureCubeMap;
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("G:/git/spaceCube/left.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("G:/git/spaceCube/right.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("G:/git/spaceCube/bottom.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("G:/git/spaceCube/top.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("G:/git/spaceCube/front.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("G:/git/spaceCube/back.jpeg"));
-	// Please find details in the source code
-	cubemap->setResizeNonPowerOfTwoHint(false);
-	geode->getOrCreateStateSet()->setTextureAttributeAndModes(0, cubemap.get());
-	geode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-
-	return geode.release();
-}
-
-float modulo(int x, int N) {
-	return (x % N + N) % N;
-}
-
-osg::MatrixTransform* createSatelliteRing(int count)
-{
-	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("G:/git/satellite/satellite_obj.obj");
-	osg::ref_ptr<osg::MatrixTransform> satellite = new osg::MatrixTransform;
-	satellite->addChild(satellite_obj);
-
-	osg::ref_ptr<osg::MatrixTransform> satellite_ring = new osg::MatrixTransform;
-
-	for (int i = 0; i < count; i++)
-	{
-		osg::ref_ptr<osg::MatrixTransform> instanced_satellite = new osg::MatrixTransform;
-		instanced_satellite->addChild(satellite);
-
-		float translateX = -sin(2.0 * i * PI / count);
-		float translateY = -cos(2.0 * i * PI / count);
-
-		float angleDegrees = modulo((90 - (360/count)*i),360);
-
-		std::cout << "test: " << modulo(90 - 45 * 3,360) << std::endl;
-
-		float angleRads = angleDegrees * PI / 180.;
-		std::cout << angleDegrees << std::endl;
-
-		instanced_satellite->setMatrix(osg::Matrix::scale(0.04, 0.04, 0.04) *
-			osg::Matrix::rotate(angleRads, osg::Z_AXIS) *
-			osg::Matrix::translate(translateX*(1.0 + satellite_distance), translateY*(1.0 + satellite_distance), 0.0));
-
-		satellite_ring->addChild(instanced_satellite);
-	}
-
-
-	return satellite_ring.release();
-}
-
-osg::MatrixTransform* createSatelliteSystem(osg::MatrixTransform* satellite_ring, const std::vector<osg::Matrix> rotations)
-{
-	
-	osg::ref_ptr<osg::MatrixTransform> satellite_system = new osg::MatrixTransform;
-
-	for (auto rotation : rotations) {
-		osg::ref_ptr<osg::MatrixTransform> satellite_ring_transformation = new osg::MatrixTransform;
-		satellite_ring_transformation->addChild(satellite_ring);
-		satellite_ring_transformation->setMatrix(rotation);
-		satellite_system->addChild(satellite_ring_transformation);
-	}
-
-	return satellite_system.release();
-}
 
 int main(int argc, char** argv)
 {
 	//osg::ref_ptr<osg::MatrixTransform> sun_node = createSunGeode();
 	osg::ref_ptr<osg::MatrixTransform> earth_node = createEarthGeode();
-	osg::ref_ptr<osg::MatrixTransform> satellite_ring_template = createSatelliteRing(4);
+	
+
+	osg::ref_ptr<osg::AnimationPathCallback> apcb = new
+		osg::AnimationPathCallback;
+	apcb->setAnimationPath(createAnimationPath(osg::Vec3(0.f,0.f,0.f), 18.0f));
+
+	//satellite_ring_template->setUpdateCallback(apcb.get());
+
 
 	std::vector<osg::Matrix> x_rotations;
-	x_rotations.push_back(osg::Matrix::rotate((45) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS));
-	x_rotations.push_back(osg::Matrix::rotate(-(45) * PI / 180, osg::X_AXIS));
+	osg::Matrix xFormationOne = osg::Matrix::rotate((45) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS);
+	osg::Matrix xFormationTwo = osg::Matrix::rotate((-45) * PI / 180, osg::X_AXIS);
 
-	std::vector<osg::Matrix> satellite_system_rotations;
-	satellite_system_rotations.push_back(osg::Matrix::rotate(0, osg::X_AXIS));
-	satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
-	satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Z_AXIS));
-
-
-	osg::ref_ptr<osg::MatrixTransform> x_system = createSatelliteSystem(satellite_ring_template, x_rotations);
-	osg::ref_ptr<osg::MatrixTransform> satellite_system = createSatelliteSystem(x_system, satellite_system_rotations);
-
-
-	osg::ref_ptr<osgAnimation::QuatSphericalLinearChannel> ch2 =
-		new osgAnimation::QuatSphericalLinearChannel;
-	ch2->setName("quat");
-	ch2->setTargetName("PathCallback");
+	osg::Matrix moveZ = osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS);
+	osg::Matrix moveY = osg::Matrix::rotate((90) * PI / 180, osg::Z_AXIS);
+	//zrot for no collision between satellites
+	x_rotations.push_back(xFormationOne); //worldMat0
+	x_rotations.push_back(xFormationTwo);
+	x_rotations.push_back(xFormationOne*moveZ); //2
+	x_rotations.push_back(xFormationTwo*moveZ);
+	x_rotations.push_back(xFormationOne*moveY); //4 etc.
+	x_rotations.push_back(xFormationTwo*moveY);
 
 
-	createAnimationPath(1.0 + satellite_distance, 18.0f,
-		ch2->getOrCreateSampler()->getOrCreateKeyframeContainer());
+	//std::vector<osg::Matrix> satellite_system_rotations;
+	//satellite_system_rotations.push_back(osg::Matrix::rotate(0, osg::X_AXIS));
+	//satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS));
+	//satellite_system_rotations.push_back(osg::Matrix::rotate((90) * PI / 180, osg::Z_AXIS));
 
-	osg::ref_ptr<osgAnimation::Animation> animation = new
-		osgAnimation::Animation;
-	animation->setPlayMode(osgAnimation::Animation::LOOP);
-	animation->addChannel(ch2.get());
+	//instanceSatelliteSystem(x_system, satellite_system_rotations);
 
-	osg::ref_ptr<osgAnimation::UpdateMatrixTransform> updater =
-		new osgAnimation::UpdateMatrixTransform("PathCallback");
-	updater->getStackedTransforms().push_back(
-		new osgAnimation::StackedQuaternionElement("quat"));
-
-
-	satellite_ring_template->setDataVariance(osg::Object::DYNAMIC);
-	satellite_ring_template->setUpdateCallback(updater.get());
-
-	osg::ref_ptr<osgAnimation::BasicAnimationManager> manager =
-		new osgAnimation::BasicAnimationManager;
-	manager->registerAnimation(animation.get());
+	
 
 	osg::ref_ptr<osg::Group> root = new osg::Group;
 	//root->addChild(sun_node);
 	root->addChild(earth_node);
 	root->addChild(createSpaceSkyBoxGeode());
-	root->addChild(satellite_system);
+	//root->addChild(instanceOne);
+	//root->addChild(instanceTwo);
+	//root->addChild(instanceOne);
+	//root->addChild(instanceOne);
+	std::vector<osg::PositionAttitudeTransform*> satRefs;
 
-	root->setUpdateCallback(manager.get());
+	for (int i = 0; i < x_rotations.size(); i++)
+	{
+		osg::ref_ptr<osg::MatrixTransform> satellite_ring = createSatelliteRing(4, "ring" + std::to_string(i), x_rotations.at(i), apcb, satRefs);
+		root->addChild(satellite_ring.release());
+	}
+	std::cout << "satRefCount " << satRefs.size() << std::endl;
+	int satelliteCount = satRefs.size();
+
+	osg::ref_ptr<osg::ShapeDrawable> beamGeometry = new osg::ShapeDrawable;
+	beamGeometry->setShape(new osg::Cylinder(osg::Vec3(0.0f, 0.0f, 0.0f),
+		0.05f, satellite_distance));
+	beamGeometry->setNodeMask(~0x5);
+
+	osg::ref_ptr<osg::MatrixTransform> beamRotation = new osg::MatrixTransform;
+	beamRotation->addChild(beamGeometry);
+	beamRotation->setMatrix(osg::Matrix::rotate(90. * PI/180., osg::Z_AXIS));
+
+	osg::ref_ptr<osg::MatrixTransform> beam = new osg::MatrixTransform;
+
+	beam->addChild(beamRotation);
 
 
 	osg::ref_ptr<PickHandler> picker = new PickHandler;
-	root->addChild(picker->getOrCreateSelectionBox());
-
+	root->addChild(picker->getPickNode());
+	root->addChild(picker->getTangentPlane());
+	root->addChild(beam);
+	//instanceSatelliteSystem(satellite_ring_template, x_rotations, root);
 
 	osg::ref_ptr<MyManipulator> myManipulator = new MyManipulator;
 	myManipulator->setHomePosition(osg::Vec3(12.5, 0 , 0),
@@ -278,18 +129,121 @@ int main(int argc, char** argv)
 	viewer.setSceneData(root);
 	viewer.setCameraManipulator(myManipulator);
 	viewer.addEventHandler(picker.get());
+	viewer.setUpViewInWindow(0, 0, 1000, 1000);
 
 	std::cout << viewer.getCamera()->getNearFarRatio() << std::endl;
 
-	manager->playAnimation(animation.get());
+	//manager->playAnimation(animation.get());
+
+	//SatelliteTracker satelliteTracker;
+	//root->accept(satelliteTracker);
+	//std::cout << "satellite count: " << satelliteTracker.getSatelliteCount() << std::endl;
+	
+	//std::vector<osg::MatrixTransform*> satellites = satelliteTracker.getSatellites();
+	//satelliteTracker.initializeMatrixHeap();
+	//satelliteTracker.calculateMatrixHeap(4);
+	//int satelliteCount = satelliteTracker.getSatelliteCount();
+
+	/*std::vector<bool> isSatelliteAbove;
+	for (int i = 0; i < satelliteCount; i++) {
+		isSatelliteAbove.push_back(false);
+	}*/
+
+	osg::ref_ptr<osg::PolygonMode> fillMode = new osg::PolygonMode;
+	fillMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+		osg::PolygonMode::FILL);
+
+	osg::ref_ptr<osg::PolygonMode> pointMode = new osg::PolygonMode;
+	pointMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+		osg::PolygonMode::POINT);
+
+	osg::Vec3d pos;
+	osg::Quat rot;
+	osg::Vec3d scale;
+	osg::Quat so;
 
 	float frameCount = 0;
 	while (!viewer.done())
 	{
+		//satelliteTracker.calculateMatrixHeap(4);
+		//std::cout << satelliteTracker.getDeconstructedMatrixAt(0).trans << std::endl;
+		
+		if (picker->isPicked())
+		{
+		
+			for (int i = 0; i < satelliteCount; i++)
+			{
+				satRefs.at(i)->getWorldMatrices().at(0).decompose(pos, rot, scale, so);
+				bool isAbove = picker->getPickPlane()->insertPlaneEquation(pos) > 0.0;
+				if (isAbove) {
+					satRefs.at(i)->getOrCreateStateSet()->setAttribute(fillMode);
+				}
+				else {
+					satRefs.at(i)->getOrCreateStateSet()->setAttribute(pointMode);
+				}
+			}
+			
+			/*satellite_ring_template->setMatrix(osg::Matrix::rotate((frameCount)*PI / 180, osg::Y_AXIS));
+
+			for (int i = 0; i < satelliteCount; i++) {
+				osg::Vec3 currentSatellitePos = satelliteTracker.getDeconstructedMatrixAt(i).pos;
+
+				//std::cout << i << ": " << picker->getPickPlane()->insertPlaneEquation(currentSatellitePos) << std::endl;
+				bool isAbove = picker->getPickPlane()->insertPlaneEquation(currentSatellitePos) > 0.0;
+				if (isSatelliteAbove.at(i) != isAbove) {
+					isSatelliteAbove.at(i) = isAbove;
+					std::cout << "satellite " << i << " is above: " << isAbove << std::endl;
+
+					if (isAbove) {
+						satellites.at(i)->getOrCreateStateSet()->setAttribute(fillMode);
+					}
+					else {
+						satellites.at(i)->getOrCreateStateSet()->setAttribute(pointMode);
+					}
+
+				}
+					
+			
+
+			}*/
+			//osg::Vec3 satellitePos = satelliteTracker.getDeconstructedMatrixAt(0).pos;
+			//osg::Vec3 satellitePosOne = satelliteTracker.getDeconstructedMatrixAt(1).pos;
+			//std::cout << "pos1: " << satellitePos << " equation: " << picker->getPickPlane()->insertPlaneEquation(satellitePos) << std::endl;
+			//std::cout << "pos2: " << satellitePosOne << " equation: " << picker->getPickPlane()->insertPlaneEquation(satellitePosOne) << std::endl;
+
+			//std::cout << frameCount << std::endl;
+
+			//beam->setMatrix(osg::Matrix::scale(1.0, 1.0, 1.0) *
+			//	osg::Matrix::rotate(frameCount / 10.0, osg::Z_AXIS) *
+			//	osg::Matrix::translate(satellitePos/2.));
+
+			/*for (int i = 0; i < satelliteCount; i++)
+			{
+				osg::Vec3 satellitePos = satelliteTracker.getDeconstructedMatrixAt(i).pos;
+				bool isSatelliteAbove = picker->getPickPlane()->planeEquation(satellitePos) > 0;
+				if (isSatelliteAbove) {
+					osg::ref_ptr<osg::PolygonMode> pm = new osg::PolygonMode;
+					pm->setMode(osg::PolygonMode::FRONT_AND_BACK,
+						osg::PolygonMode::FILL);
+
+					satellites.at(i)->getOrCreateStateSet()->setAttribute(pm.get());
+				}
+				else {
+					osg::ref_ptr<osg::PolygonMode> pm = new osg::PolygonMode;
+					pm->setMode(osg::PolygonMode::FRONT_AND_BACK,
+						osg::PolygonMode::POINT);
+
+					satellites.at(i)->getOrCreateStateSet()->setAttribute(pm.get());
+				}
+			}*/
+				
+		}
+
 		frameCount++;
-		//satellite_ring_container->setMatrix(osg::Matrix::rotate((frameCount / 2) * PI / 180, osg::X_AXIS));
 		viewer.frame();
 	}
+	picker->getPickPlane()->printPlaneEquation();
+	//satelliteTracker.deleteMatrixHeap();
 
 	return 0;
 }

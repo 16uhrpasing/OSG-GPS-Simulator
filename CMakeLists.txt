@@ -22,12 +22,20 @@ endmacro()
 include_directories("${CMAKE_SOURCE_DIR}/include")
 add_executable( ${PROJECT_NAME} 
 src/main.cpp 
-include/MyManipulator.cpp 
+src/MyManipulator.cpp 
 include/MyManipulator.h 
-include/PickHandler.cpp 
+src/PickHandler.cpp 
 include/PickHandler.h 
-include/Skybox.cpp 
-include/Skybox.h )
+src/Skybox.cpp 
+include/Skybox.h
+src/UniverseObjects.cpp 
+include/UniverseObjects.h
+src/Animator.cpp 
+include/Animator.h
+src/SatelliteTracker.cpp 
+include/SatelliteTracker.h 
+src/MathLib.cpp
+include/MathLib.h )
 
 config_project( ${PROJECT_NAME} OPENTHREADS )
 config_project( ${PROJECT_NAME} OSGANIMATION )
