@@ -33,4 +33,3 @@ osg::MatrixTransform* createSatelliteRing(int count,
 	const osg::Matrix& mat,
 	osg::AnimationPathCallback* animation,
 	std::vector<osg::PositionAttitudeTransform*>& refList);
-void instanceSatelliteSystem(osg::MatrixTransform* satellite_ring, const std::vector<osg::Matrix>& rotations, osg::Group* root);

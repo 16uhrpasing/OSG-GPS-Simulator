@@ -134,10 +134,6 @@ osg::MatrixTransform* createSatelliteRing(int count,
 		instanced_satellite->setPosition(osg::Vec3d(translateX * (1.0 + satellite_distance), translateY * (1.0 + satellite_distance), 0.0));
 
 		refList.push_back(instanced_satellite);
-		/*instanced_satellite->setMatrix(osg::Matrix::scale(0.04, 0.04, 0.04) *
-			osg::Matrix::rotate(angleRads, osg::Z_AXIS) *
-			osg::Matrix::translate(translateX * (1.0 + satellite_distance), translateY * (1.0 + satellite_distance), 0.0));*/
-
 
 		satellite_ring->addChild(instanced_satellite.release());
 		satellite_ring->setUpdateCallback(animation);
@@ -146,22 +142,4 @@ osg::MatrixTransform* createSatelliteRing(int count,
 	rotWrap->addChild(satellite_ring.release());
 	rotWrap->setMatrix(mat);
 	return rotWrap.release();
-}
-
-void instanceSatelliteSystem(osg::MatrixTransform* satellite_ring, const std::vector<osg::Matrix>& rotations, osg::Group* root)
-{
-
-	//osg::ref_ptr<osg::MatrixTransform> satellite_system = new osg::MatrixTransform;
-
-	for (int i = 0; i < rotations.size(); i++) { //current Ring
-		osg::ref_ptr<osg::MatrixTransform> satellite_ring_transformation = new osg::MatrixTransform;
-
-		satellite_ring_transformation->addChild(satellite_ring);
-		satellite_ring_transformation->setMatrix(rotations.at(i));
-		satellite_ring_transformation->setName("ring" + std::to_string(i));
-		root->addChild(satellite_ring_transformation.release());
-		//satellite_system->addChild(satellite_ring_transformation);
-	}
-
-	//root->addChild(satellite_system.release());
 }
