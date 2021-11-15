@@ -18,6 +18,10 @@
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 
+/**
+ * Library for some space objects and constants
+ */
+
 //earth distance mapped to 1
 const double radius_earth = 6378.137;
 const double satellite_distance = 37000 / radius_earth;

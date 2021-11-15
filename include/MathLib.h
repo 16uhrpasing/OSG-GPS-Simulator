@@ -5,6 +5,11 @@
 
 const double PI = 3.14159265;
 
+/**
+ * Class for plane calculations
+ *
+ * @param offset, directionOne, directionTwo -> parameters for a plane
+ */
 class MathPlane {
 public:
 	MathPlane(osg::Vec3d& offset, osg::Vec3d& directionOne, osg::Vec3d& directionTwo) :
@@ -33,6 +38,9 @@ protected:
 	osg::Vec3d directionTwo;
 };
 
+/**
+ * Some common math functions
+ */
 
 float modulo(int x, int N);
 

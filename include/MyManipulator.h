@@ -3,7 +3,9 @@
 #include <osgGA/NodeTrackerManipulator>
 #include <iostream>
 
-
+/**
+ * Extend manipulator class to set a min/max distance
+ */
 class MyManipulator : public osgGA::NodeTrackerManipulator
 {
 public:

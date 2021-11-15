@@ -48,13 +48,13 @@ void GPSTracker::trackBeams()
 
 			if (isAbove)
 			{
-				std::cout << "satellite number " << i << " appeared" << std::endl;
+				//std::cout << "satellite number " << i << " appeared" << std::endl;
 				satelliteListRef.at(i)->getOrCreateStateSet()->setAttribute(fillMode);
 				beamRefs.at(i)->setNodeMask(1);
 				visibleSatelliteCount++;
 			}
 			else {
-				std::cout << "satellite number " << i << " left" << std::endl;
+				//std::cout << "satellite number " << i << " left" << std::endl;
 				satelliteListRef.at(i)->getOrCreateStateSet()->setAttribute(pointMode);
 				beamRefs.at(i)->setNodeMask(0);
 				visibleSatelliteCount--;

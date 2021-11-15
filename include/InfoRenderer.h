@@ -6,6 +6,16 @@
 #include <osgText/Font>
 #include <osgText/Text>
 
+/**
+ * Class to display important information about the tracking
+ * show the 
+ * - total amount of satellites
+ * - total amount of visible satellites
+ * - lat/lon location
+ * - the normal plane equation of the tracked point
+ * 
+ * @param left, right, bottom, top -> window dimensions
+ */
 class InfoRenderer
 {
 public:
@@ -47,10 +57,10 @@ public:
 		textGeode->addDrawable(locationText);
 		textGeode->addDrawable(planeEquationText);
 
-		setTotalSatellites(10);
-		setVisibleSatellites(5);
-		setLocation("hudson");
-		setPlaneEq("sfasfxx");
+		setTotalSatellites(0);
+		setVisibleSatellites(0);
+		setLocation("no location selected");
+		setPlaneEq("no location selected");
 
 		HUDcamera->addChild(textGeode.release());
 	}
@@ -93,5 +103,5 @@ protected:
 	osg::ref_ptr<osgText::Text> locationText;
 	osg::ref_ptr<osgText::Text> planeEquationText;
 	osg::ref_ptr<osgText::Font> g_font =
-		osgText::readFontFile("fonts/VeraMono.ttf");
+		osgText::readFontFile("files/fonts/VeraMono.ttf");
 };

@@ -21,6 +21,7 @@ macro( config_project PROJNAME LIBNAME )
 endmacro()
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories("${CMAKE_SOURCE_DIR}/files")
 add_executable( ${PROJECT_NAME} 
 src/main.cpp 
 src/MyManipulator.cpp 
@@ -47,3 +48,6 @@ config_project( ${PROJECT_NAME} OSGTEXT )
 config_project( ${PROJECT_NAME} OSGDB )
 config_project( ${PROJECT_NAME} OSGUTIL )
 config_project( ${PROJECT_NAME} OSGVIEWER )
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/files/
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/files/)

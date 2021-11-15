@@ -7,7 +7,9 @@
 #include <osgUtil/ShaderGen>
 #include <osgGA/NodeTrackerManipulator>
 
-
+/**
+ * Simple SkyBox node
+ */
 class SkyBox : public osg::Transform
 {
 public:

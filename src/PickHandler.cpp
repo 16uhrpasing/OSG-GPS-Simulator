@@ -170,8 +170,6 @@ bool PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
 			if (isPlaneCallbackSet) planeCallback(_pickPlane->getPlaneEquationString());
 			if (isLocationCallbackSet) locationCallback(latlon.toHumanReadableString());
 
-			//_tangentPlane->unref();
-			//_tangentPlane = new osg::MatrixTransform;
 			_tangentPlane->removeChildren(0, _tangentPlane->getNumChildren());
 	
 			

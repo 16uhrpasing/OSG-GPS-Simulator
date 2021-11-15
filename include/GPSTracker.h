@@ -6,8 +6,14 @@
 #include <osg/io_utils>
 #include <PickHandler.h>
 
+/**
+ * Callback to call after a satellite becomes in/visible
+ */
 typedef void (*VisibleSatelliteCallback)(int);
 
+/**
+ * Struct to deconstruct the transformation matrix
+ */
 struct DeconstructedMatrix {
 	osg::Vec3d satPos;
 	osg::Quat satRot;
@@ -15,6 +21,12 @@ struct DeconstructedMatrix {
 	osg::Quat satSo;
 };
 
+/**
+ * Class to draw lines from the satellites to the tracking point
+ *
+ * @param satRefs -> list of the satellite nodes
+ * @param pHandler -> pickhandler to get the needed tracking information
+ */
 class GPSTracker 
 {
 public:

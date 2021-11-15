@@ -12,9 +12,16 @@
 #include <osgUtil/LineSegmentIntersector>
 #include <MathLib.h>
 
+//Callback if the normal plane of the tracking point has changed
 typedef void (*PlaneCallback)(std::string);
+//Callback if the location of the tracking point has changed
 typedef void (*LocationCallback)(std::string);
 
+/**
+ * Class to calculate the intersection point of the click on the earth
+ * draws a normal plane and adds a tracking point which can be used for 
+ * further calculations
+ */
 class PickHandler : public osgGA::GUIEventHandler
 {
 public:

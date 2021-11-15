@@ -15,12 +15,12 @@ osg::MatrixTransform* createEarthGeode() {
 	auto earthState = earth_sphere->getOrCreateStateSet();
 	earthState->setTextureAttributeAndModes(0, new osg::TexGen);
 	osg::ref_ptr<osg::TextureCubeMap> tcm = new osg::TextureCubeMap;
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("G:/git/earthCube/flipped/posx.jpeg")); //posx
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("G:/git/earthCube/flipped/negx.jpeg")); //links
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("G:/git/earthCube/flipped/negy.jpeg")); //hinten
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("G:/git/earthCube/flipped/posyy.jpeg")); //vorne
-	tcm->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("G:/git/earthCube/flipped/negz.jpeg")); //oben
-	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("G:/git/earthCube/flipped/posz.jpeg")); //negy
+	tcm->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("files/earthCubeMap/posx.jpeg")); //posx
+	tcm->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("files/earthCubeMap/negx.jpeg")); //links
+	tcm->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("files/earthCubeMap/negy.jpeg")); //hinten
+	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("files/earthCubeMap/posy.jpeg")); //vorne
+	tcm->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("files/earthCubeMap/negz.jpeg")); //oben
+	tcm->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("files/earthCubeMap/posz.jpeg")); //negy
 	earthState->setTextureAttributeAndModes(0, tcm.get());
 
 	earth_geode->addDrawable(earth_sphere);
@@ -83,12 +83,12 @@ osg::Geode* createSpaceSkyBoxGeode() {
 
 	osg::ref_ptr<osg::TextureCubeMap> cubemap =
 		new osg::TextureCubeMap;
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("G:/git/spaceCube/left.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("G:/git/spaceCube/right.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("G:/git/spaceCube/bottom.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("G:/git/spaceCube/top.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("G:/git/spaceCube/front.jpeg"));
-	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("G:/git/spaceCube/back.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::POSITIVE_X, osgDB::readImageFile("files/skybox/left.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_X, osgDB::readImageFile("files/skybox/right.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Y, osgDB::readImageFile("files/skybox/bottom.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Y, osgDB::readImageFile("files/skybox/top.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::POSITIVE_Z, osgDB::readImageFile("files/skybox/front.jpeg"));
+	cubemap->setImage(osg::TextureCubeMap::NEGATIVE_Z, osgDB::readImageFile("files/skybox/back.jpeg"));
 	// Please find details in the source code
 	cubemap->setResizeNonPowerOfTwoHint(false);
 	geode->getOrCreateStateSet()->setTextureAttributeAndModes(0, cubemap.get());
@@ -104,7 +104,7 @@ osg::MatrixTransform* createSatelliteRing(int count,
 	osg::AnimationPathCallback* animation, 
 	std::vector<osg::PositionAttitudeTransform*>& refList)
 {
-	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("G:/git/satellite/satellite_obj.obj");
+	osg::ref_ptr<osg::Node> satellite_obj = osgDB::readNodeFile("files/satellite_obj.obj");
 	//auto test = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0, 0.0, 0.0), 1.0));
 	osg::ref_ptr<osg::PositionAttitudeTransform> satellite_template = new osg::PositionAttitudeTransform;
 
@@ -129,7 +129,7 @@ osg::MatrixTransform* createSatelliteRing(int count,
 		float angleRads = angleDegrees * PI / 180.;
 		std::cout << angleDegrees << std::endl;
 
-		instanced_satellite->setScale(osg::Vec3d(0.04, 0.04, 0.04));
+		instanced_satellite->setScale(osg::Vec3d(0.02, 0.02, 0.02));
 		instanced_satellite->setAttitude(osg::Quat(angleRads, osg::Z_AXIS));
 		instanced_satellite->setPosition(osg::Vec3d(translateX * (1.0 + satellite_distance), translateY * (1.0 + satellite_distance), 0.0));
 
