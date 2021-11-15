@@ -16,9 +16,12 @@ public:
 	virtual double insertPlaneEquation(const osg::Vec3d& p);
 	virtual osg::Vec3d parametricEquation(double s, double t);
 	virtual void printPlaneEquation();
+	virtual std::string getPlaneEquationString();
 	virtual void printParametricEquation();
 	virtual void setPlaneEquation(const osg::Vec3d& offset, const osg::Vec3d& directionOne, const osg::Vec3d& directionTwo);
 	virtual osg::Vec4d& getPlaneEquation();
+
+
 
 protected:
 	//equation
@@ -33,4 +36,8 @@ protected:
 
 float modulo(int x, int N);
 
-double angleBetweenVec3s(osg::Vec3 v1, osg::Vec3 v2);
+double angleBetweenVec3s(const osg::Vec3d& v1, const osg::Vec3d& v2);
+
+inline double roundTwoDecimals(double input) {
+	return std::ceil(input * 100.0) / 100.0;
+}

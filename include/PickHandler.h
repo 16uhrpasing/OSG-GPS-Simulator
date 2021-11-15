@@ -12,6 +12,9 @@
 #include <osgUtil/LineSegmentIntersector>
 #include <MathLib.h>
 
+typedef void (*PlaneCallback)(std::string);
+typedef void (*LocationCallback)(std::string);
+
 class PickHandler : public osgGA::GUIEventHandler
 {
 public:
@@ -36,7 +39,7 @@ public:
 		_tangentPointTemplate->setShape(new osg::Sphere(osg::Vec3(0.0,0.0,0.0),
 			0.02f));
 		_tangentPointTemplate->setColor(osg::Vec4f(0.7, 0.2, 0.3, 1.0));
-
+		
 	}
 	~PickHandler() {
 		delete _pickPlane;
@@ -46,8 +49,20 @@ public:
 	virtual bool isPicked();
 	virtual MathPlane* getPickPlane();
 	virtual osg::MatrixTransform* getTangentPlane();
+
+
+
 	virtual bool handle(const osgGA::GUIEventAdapter& ea,
 		osgGA::GUIActionAdapter& aa);
+
+	inline void setPlaneCallback(PlaneCallback pc) {
+		isPlaneCallbackSet = true;
+		planeCallback = pc;
+	}
+	inline void setLocationCallback(LocationCallback lc) {
+		isLocationCallbackSet = true;
+		locationCallback = lc;
+	}
 
 protected:
 	osg::ref_ptr<osg::PositionAttitudeTransform> _selectionSphere;
@@ -55,4 +70,16 @@ protected:
 	bool _picked;
 	MathPlane* _pickPlane;
 	osg::ref_ptr<osg::ShapeDrawable> _tangentPointTemplate;
+
+	bool isPlaneCallbackSet = false;
+	bool isLocationCallbackSet = false;
+	PlaneCallback planeCallback;
+	LocationCallback locationCallback;
 };
+
+enum Direction {
+	North, East, South, West
+};
+
+std::string parseLatLon(double latValue, double lonValue);
+std::string parseLatitudeOrLongitude(double value, Direction direction);

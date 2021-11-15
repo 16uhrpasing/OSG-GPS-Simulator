@@ -17,6 +17,9 @@
 #include <osg/io_utils>
 #include <osg/MatrixTransform>
 
+#include <osgText/Font>
+#include <osgText/Text>
+
 #include <osgAnimation/BasicAnimationManager>
 #include <osgAnimation/UpdateMatrixTransform>
 #include <osgAnimation/StackedTranslateElement>
@@ -27,7 +30,8 @@
 #include <PickHandler.h>
 #include <UniverseObjects.h>
 #include <Animator.h>
-#include <SatelliteTracker.h>
+#include <GPSTracker.h>
+#include <InfoRenderer.h>
 
 #include <tuple>
 
@@ -35,8 +39,25 @@
 
 #include <stdexcept>
 
+osg::ref_ptr<PickHandler> pickHandler;
+GPSTracker* gpstracker;
+InfoRenderer* infoRenderer;
 
+void onPlaneChanged(std::string input) {
+	std::cout << "plane callback " << input << std::endl;
+	infoRenderer->setPlaneEq(input);
+}
 
+void onLatLonChanged(std::string input) {
+	std::cout << "latlon callback " << input << std::endl;
+	infoRenderer->setLocation(input);
+}
+
+void onVisibleSatellitesChanged(int count)
+{
+	std::cout << "satellite callback " << count << std::endl;
+	infoRenderer->setVisibleSatellites(count);
+}
 
 int main(int argc, char** argv)
 {
@@ -48,7 +69,7 @@ int main(int argc, char** argv)
 	apcb->setAnimationPath(createAnimationPath(osg::Vec3(0.f,0.f,0.f), 18.0f));
 
 	std::vector<osg::Matrix> x_rotations;
-	osg::Matrix xFormationOne = osg::Matrix::rotate((45) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS);
+	osg::Matrix xFormationOne = osg::Matrix::rotate((255) * PI / 180, osg::Z_AXIS) * osg::Matrix::rotate((45) * PI / 180, osg::X_AXIS);
 	osg::Matrix xFormationTwo = osg::Matrix::rotate((-45) * PI / 180, osg::X_AXIS);
 
 	osg::Matrix moveZ = osg::Matrix::rotate((90) * PI / 180, osg::Y_AXIS);
@@ -77,24 +98,13 @@ int main(int argc, char** argv)
 	std::cout << "satRefCount " << satRefs.size() << std::endl;
 	int satelliteCount = satRefs.size();
 
-	osg::ref_ptr<osg::ShapeDrawable> beamGeometry = new osg::ShapeDrawable;
-	beamGeometry->setShape(new osg::Cylinder(osg::Vec3(0.0f, 0.0f, 0.0f),
-		0.05f, satellite_distance));
-	beamGeometry->setNodeMask(~0x5);
 
-	osg::ref_ptr<osg::MatrixTransform> beamRotation = new osg::MatrixTransform;
-	beamRotation->addChild(beamGeometry);
-	beamRotation->setMatrix(osg::Matrix::rotate(90. * PI/180., osg::Z_AXIS));
+	pickHandler = new PickHandler;
+	root->addChild(pickHandler->getPickNode());
+	root->addChild(pickHandler->getTangentPlane());
 
-	osg::ref_ptr<osg::MatrixTransform> beam = new osg::MatrixTransform;
-
-	beam->addChild(beamRotation);
-
-
-	osg::ref_ptr<PickHandler> picker = new PickHandler;
-	root->addChild(picker->getPickNode());
-	root->addChild(picker->getTangentPlane());
-	root->addChild(beam);
+	gpstracker = new GPSTracker(satRefs, pickHandler);
+	root->addChild(gpstracker->getBeams());
 
 	osg::ref_ptr<MyManipulator> myManipulator = new MyManipulator;
 	myManipulator->setHomePosition(osg::Vec3(12.5, 0 , 0),
@@ -108,53 +118,44 @@ int main(int argc, char** argv)
 	myManipulator->setMinMaxDistance(3, 40.0);
 
 
+
+
+	infoRenderer = new InfoRenderer(0, 1000, 0, 1000);
+	infoRenderer->setTotalSatellites(satRefs.size());
+
+	
+	pickHandler->setPlaneCallback(&onPlaneChanged);
+	pickHandler->setLocationCallback(&onLatLonChanged);
+	gpstracker->setVisibleSatelliteCallback(&onVisibleSatellitesChanged);
+
+	root->addChild(infoRenderer->getHUDCamera());
+
+
+
 	osgViewer::Viewer viewer;
 	viewer.setSceneData(root);
 	viewer.setCameraManipulator(myManipulator);
-	viewer.addEventHandler(picker.get());
+	viewer.addEventHandler(pickHandler.get());
 	viewer.setUpViewInWindow(0, 0, 1000, 1000);
 
 	std::cout << viewer.getCamera()->getNearFarRatio() << std::endl;
 
 
-	osg::ref_ptr<osg::PolygonMode> fillMode = new osg::PolygonMode;
-	fillMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-		osg::PolygonMode::FILL);
-
-	osg::ref_ptr<osg::PolygonMode> pointMode = new osg::PolygonMode;
-	pointMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-		osg::PolygonMode::POINT);
-
-	osg::Vec3d pos;
-	osg::Quat rot;
-	osg::Vec3d scale;
-	osg::Quat so;
 
 	float frameCount = 0;
 	while (!viewer.done())
 	{
 
-		if (picker->isPicked())
+		if (pickHandler->isPicked())
 		{
-		
-			for (int i = 0; i < satelliteCount; i++)
-			{
-				satRefs.at(i)->getWorldMatrices().at(0).decompose(pos, rot, scale, so);
-				bool isAbove = picker->getPickPlane()->insertPlaneEquation(pos) > 0.0;
-				if (isAbove) {
-					satRefs.at(i)->getOrCreateStateSet()->setAttribute(fillMode);
-				}
-				else {
-					satRefs.at(i)->getOrCreateStateSet()->setAttribute(pointMode);
-				}
-			}
-			
+
+			gpstracker->trackBeams();
 		}
 
 		frameCount++;
 		viewer.frame();
 	}
-	picker->getPickPlane()->printPlaneEquation();
+	pickHandler->getPickPlane()->printPlaneEquation();
 
 	return 0;
 }

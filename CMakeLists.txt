@@ -12,6 +12,7 @@ find_package( osg )
 find_package( osgDB )
 find_package( osgGA )
 find_package( osgUtil )
+find_package( osgText )
 find_package( osgViewer )
 find_package( osgAnimation )
 macro( config_project PROJNAME LIBNAME )
@@ -33,12 +34,16 @@ include/UniverseObjects.h
 src/Animator.cpp 
 include/Animator.h
 src/MathLib.cpp
-include/MathLib.h )
+include/MathLib.h
+src/GPSTracker.cpp
+include/GPSTracker.h
+include/InfoRenderer.h)
 
 config_project( ${PROJECT_NAME} OPENTHREADS )
 config_project( ${PROJECT_NAME} OSGANIMATION )
 config_project( ${PROJECT_NAME} OSGGA )
 config_project( ${PROJECT_NAME} OSG )
+config_project( ${PROJECT_NAME} OSGTEXT )
 config_project( ${PROJECT_NAME} OSGDB )
 config_project( ${PROJECT_NAME} OSGUTIL )
 config_project( ${PROJECT_NAME} OSGVIEWER )

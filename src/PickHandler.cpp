@@ -1,13 +1,69 @@
 #include <PickHandler.h>
 
-struct latlon {
+struct Latlon {
 	double lat;
 	double lon;
 
 	void print() {
 		std::cout << "lat: " << lat << "\nlon: " << lon << std::endl;
 	}
+
+	std::string toHumanReadableString() {
+		return parseLatLon(lat, lon);
+	}
 };
+
+
+
+std::string parseLatLon(double latValue, double lonValue)
+{
+	Direction directionLatitude = latValue < 0 ? South : North;
+	std::string latParse = parseLatitudeOrLongitude(latValue, directionLatitude);
+
+	Direction directionLongitude = lonValue < 0 ? West : East;
+	std::string lonParse = parseLatitudeOrLongitude(lonValue, directionLongitude);
+
+	return latParse + " " + lonParse;
+}
+
+//This must be a private method because it requires the caller to ensure
+//that the direction parameter is correct.
+std::string parseLatitudeOrLongitude(double value, Direction direction)
+{
+	value = abs(value);
+
+	double degrees = trunc(value);
+
+	value = (value - degrees) * 60;    
+
+	double minutes = trunc(value);
+	double seconds = (value - minutes) * 60; 
+
+	std::string directionStr = "";
+
+	switch (direction)
+	{
+	case North:
+		directionStr = "N";
+		break;
+	case East:
+		directionStr = "E";
+		break;
+	case South:
+		directionStr = "S";
+		break;
+	case West:
+		directionStr = "W";
+		break;
+	}
+
+	//degrees = roundTwoDecimals(degrees);
+	//minutes = roundTwoDecimals(minutes);
+	seconds = roundTwoDecimals(seconds);
+
+	return std::to_string(degrees).substr(0, 2) + "°" + std::to_string(minutes).substr(0, 2) +
+		"'" + std::to_string(seconds).substr(0, 4) + "''" + directionStr;
+}
 
 int sign(double x) {
 	if (x > 0.0) return 1;
@@ -15,7 +71,7 @@ int sign(double x) {
 	return 0;
 }
 
-latlon vec3ToLatlon(const osg::Vec3& earthCoord) {
+Latlon vec3ToLatlon(const osg::Vec3& earthCoord) {
 	auto [x, y, z] = std::make_tuple(earthCoord.x(), earthCoord.y(), earthCoord.z());
 
 	//Normalize X, Z longitude
@@ -36,7 +92,7 @@ latlon vec3ToLatlon(const osg::Vec3& earthCoord) {
 	 
 	std::cout << "previus lat: " << y * -90. << std::endl;
 
-	return latlon{ -asin(y) * 180. / PI, lon };
+	return Latlon{ -asin(y) * 180. / PI, lon };
 }
 
 osg::Node* PickHandler::getPickNode()
@@ -93,7 +149,10 @@ bool PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
 			osg::Vec3d normalizedIntersection = result.localIntersectionPoint;
 			normalizedIntersection.normalize();
 			std::cout << normalizedIntersection.x() << "..." << normalizedIntersection.y() << "..." << normalizedIntersection.z() << std::endl;
-			vec3ToLatlon(normalizedIntersection).print();
+			
+			Latlon latlon = vec3ToLatlon(normalizedIntersection);
+			latlon.print();
+			std::cout << latlon.toHumanReadableString() << std::endl;
 			
 			_picked = true;
 			_selectionSphere->setPosition(normalizedIntersection);
@@ -107,6 +166,10 @@ bool PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
 
 			_pickPlane->setPlaneEquation(normalizedIntersection, firstDirection, secondDirection);
 			_pickPlane->printParametricEquation();
+
+			if (isPlaneCallbackSet) planeCallback(_pickPlane->getPlaneEquationString());
+			if (isLocationCallbackSet) locationCallback(latlon.toHumanReadableString());
+
 			//_tangentPlane->unref();
 			//_tangentPlane = new osg::MatrixTransform;
 			_tangentPlane->removeChildren(0, _tangentPlane->getNumChildren());
