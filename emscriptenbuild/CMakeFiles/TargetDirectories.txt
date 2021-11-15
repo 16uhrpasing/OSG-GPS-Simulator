@@ -1,3 +1,0 @@
-G:/git/OSG_GPS_Simulator/emscriptenbuild/CMakeFiles/OSG_GPS_Simulator.dir
-G:/git/OSG_GPS_Simulator/emscriptenbuild/CMakeFiles/edit_cache.dir
-G:/git/OSG_GPS_Simulator/emscriptenbuild/CMakeFiles/rebuild_cache.dir
