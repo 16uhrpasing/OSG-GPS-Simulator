@@ -14,4 +14,4 @@ A simple C++/OSG application simulating the visibility of GPS satellites above a
 ### Installing
 
 * No modifications need to be made to files/folders
-* Just run cmake in the directory containing the CMakeLists.txt file
+* Run cmake in the directory containing the CMakeLists.txt file
