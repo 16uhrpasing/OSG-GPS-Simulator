@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 	int screenWidth, screenHeight;
 	GetDesktopResolution(screenWidth, screenHeight);
 
-	infoRenderer = new InfoRenderer(0, screenWidth, 0, screenHeight);
+	infoRenderer = new InfoRenderer(0, 1000, 0, 1000);
 	infoRenderer->setTotalSatellites(satRefs.size());
 
 	//Set callbacks for the info renderer
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 	viewer.setCameraManipulator(myManipulator);
 	viewer.addEventHandler(pickHandler.get());
 	//uncomment for windowed mode
-	//viewer.setUpViewInWindow(0, 0, 1000, 1000);
+	viewer.setUpViewInWindow(0, 0, 1000, 1000);
 
 	std::cout << screenWidth << "x" << screenHeight << std::endl;
 
