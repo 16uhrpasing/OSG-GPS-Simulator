@@ -42,7 +42,7 @@
 #include "wtypes.h"
 
 osg::ref_ptr<PickHandler> pickHandler;
-GPSTracker* gpstracker;
+GPSTracker* gpsTracker;
 InfoRenderer* infoRenderer;
 
 // Get the horizontal and vertical screen sizes in pixel
@@ -120,8 +120,8 @@ int main(int argc, char** argv)
 	root->addChild(pickHandler->getTangentPlane());
 
 	//Add a gps tracker
-	gpstracker = new GPSTracker(satRefs, pickHandler);
-	root->addChild(gpstracker->getBeams());
+	gpsTracker = new GPSTracker(satRefs, pickHandler);
+	root->addChild(gpsTracker->getBeams());
 
 	//min/max manipulator
 	osg::ref_ptr<MyManipulator> myManipulator = new MyManipulator;
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 	//Set callbacks for the info renderer
 	pickHandler->setPlaneCallback(&onPlaneChanged);
 	pickHandler->setLocationCallback(&onLatLonChanged);
-	gpstracker->setVisibleSatelliteCallback(&onVisibleSatellitesChanged);
+	gpsTracker->setVisibleSatelliteCallback(&onVisibleSatellitesChanged);
 
 	root->addChild(infoRenderer->getHUDCamera());
 
@@ -162,11 +162,14 @@ int main(int argc, char** argv)
 	{
 		if (pickHandler->isPicked())
 		{
-			gpstracker->trackBeams();
+			gpsTracker->trackBeams();
 		}
 		viewer.frame();
 	}
 	pickHandler->getPickPlane()->printPlaneEquation();
+
+	delete gpsTracker;
+	delete infoRenderer;
 
 	return 0;
 }
