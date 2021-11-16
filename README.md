@@ -1,22 +1,20 @@
-# Project Title
+# C++ OSG GPS Simulator
 
-Simple overview of use/purpose.
+![alt text](./preview.png)
 
-## Description
-
-An in-depth paragraph about your project and overview of use.
+A simple C++/OSG application simulating the visibility of GPS satellites above a specified tracking point.
 
 ## Getting Started
 
 ### Dependencies
 
-* Describe any prerequisites, libraries, OS version, etc., needed before installing program.
+* A fully functional installation of [OpenSceneGraph](https://github.com/openscenegraph/OpenSceneGraph)
 * ex. Windows 10
 
 ### Installing
 
-* How/where to download your program
-* Any modifications needed to be made to files/folders
+* No modifications need to be made to files/folders
+* Just run cmake in the directory containing the CMakeLists.txt file
 
 ### Executing program
 
