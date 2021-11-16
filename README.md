@@ -9,7 +9,7 @@ A simple C++/OSG application simulating the visibility of GPS satellites above a
 ### Dependencies
 
 * A fully functional installation of [OpenSceneGraph](https://github.com/openscenegraph/OpenSceneGraph) with the corresponding environment variables
-* only tested on Windows 10
+* Only tested on Windows 10
 
 ### Installing
 
